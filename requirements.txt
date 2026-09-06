@@ -1,0 +1,25 @@
+# Phase 1 (Data Pipeline)
+pandas>=2.0
+pandera>=0.33
+pytest>=8.0
+
+# Phase 2 (EDA & Feature Engineering)
+matplotlib>=3.8
+seaborn>=0.13
+scikit-learn>=1.4
+nbformat>=5.10
+nbclient>=0.10
+ipykernel>=6.29
+
+# Phase 3 (Baseline Models) — scikit-learn already covers everything
+# needed (DummyRegressor, LinearRegression/Ridge/Lasso, trees,
+# RandomForest); no new packages required.
+
+# Phase 4 (Advanced Modeling & Tuning)
+lightgbm>=4.0
+xgboost>=2.0
+joblib>=1.3
+
+# Later phases will add: shap, mlflow, fastapi, uvicorn, sqlalchemy,
+# etc. — added when each phase needs them, not pinned speculatively
+# ahead of time.

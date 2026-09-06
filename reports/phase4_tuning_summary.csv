@@ -1,0 +1,3 @@
+model,val_MAE,val_RMSE,val_R2,best_cv_MAE,best_params
+Random Forest,0.1704314816206871,0.311938848814761,0.9181456555429338,0.14772294043779538,"{'bootstrap': False, 'max_depth': 24, 'max_features': 0.7, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 502}"
+Decision Tree,0.21698097692099205,0.3889235358064076,0.872757774823095,0.17150504411042486,"{'ccp_alpha': np.float64(0.0006877704223043679), 'max_depth': 15, 'max_features': None, 'min_samples_leaf': 4, 'min_samples_split': 5}"
