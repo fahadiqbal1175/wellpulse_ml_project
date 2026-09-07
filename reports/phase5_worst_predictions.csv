@@ -1,0 +1,11 @@
+Country,Academic_Level,Age,Gender,Avg_Daily_Usage_Hours,Sleep_Hours_Per_Night,Conflicts_Over_Social_Media,Most_Used_Platform,Relationship_Status,actual_score,predicted_score,abs_error
+New Zealand,Graduate,21,Male,4.6,7.6,3,Instagram,In Relationship,7,5.175298804780876,1.8247011952191237
+New Zealand,Graduate,22,Male,4.7,7.5,3,Instagram,In Relationship,7,5.322709163346613,1.6772908366533867
+New Zealand,Graduate,22,Male,4.1,8.1,3,Instagram,In Relationship,7,5.657370517928287,1.3426294820717128
+Czech Republic,High School,18,Female,6.1,5.2,4,Snapchat,Single,4,5.00398406374502,1.00398406374502
+Canada,Graduate,21,Male,4.6,7.6,3,Instagram,Single,7,6.0,1.0
+Germany,Graduate,23,Male,1.5,8.0,0,LinkedIn,Single,9,8.0,1.0
+Italy,Graduate,21,Male,5.0,7.1,3,Instagram,Single,5,5.99203187250996,0.9920318725099602
+Maldives,Undergraduate,20,Female,4.4,7.6,2,Instagram,In Relationship,8,7.01195219123506,0.9880478087649402
+USA,Undergraduate,19,Female,6.9,5.4,4,Instagram,In Relationship,5,4.01792828685259,0.9820717131474099
+USA,Undergraduate,19,Female,7.1,5.2,4,Instagram,In Relationship,5,4.0199203187251,0.9800796812749004

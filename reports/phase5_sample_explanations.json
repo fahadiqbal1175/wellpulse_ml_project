@@ -1,0 +1,97 @@
+{
+  "final_model_name": "Random Forest (tuned)",
+  "residual_std_val": 0.31193645709796924,
+  "confidence_proxy_note": "Symmetric interval = prediction +/- 1 residual std, measured on the validation set. This is a simple spread proxy, not a calibrated statistical prediction interval.",
+  "explanations": [
+    {
+      "test_row_index": 127,
+      "actual_score": 8.0,
+      "predicted_score": 7.012,
+      "confidence_interval_68pct": [
+        6.7,
+        7.324
+      ],
+      "top_factors": [
+        {
+          "feature": "usage_conflict_interaction",
+          "pretty_name": "usage-conflict interaction",
+          "shap_value": 0.6602444589309502,
+          "direction": "raising"
+        },
+        {
+          "feature": "Conflicts_Over_Social_Media",
+          "pretty_name": "conflicts over social media",
+          "shap_value": 0.350624190462464,
+          "direction": "raising"
+        },
+        {
+          "feature": "usage_to_sleep_ratio",
+          "pretty_name": "usage-to-sleep ratio",
+          "shap_value": -0.06980337065549577,
+          "direction": "lowering"
+        }
+      ],
+      "explanation_sentence": "This prediction was most shaped by usage-conflict interaction (raising the score), conflicts over social media (raising the score), and usage-to-sleep ratio (lowering the score)."
+    },
+    {
+      "test_row_index": 117,
+      "actual_score": 6.0,
+      "predicted_score": 5.996,
+      "confidence_interval_68pct": [
+        5.684,
+        6.308
+      ],
+      "top_factors": [
+        {
+          "feature": "usage_conflict_interaction",
+          "pretty_name": "usage-conflict interaction",
+          "shap_value": -0.3217540275436751,
+          "direction": "lowering"
+        },
+        {
+          "feature": "Conflicts_Over_Social_Media",
+          "pretty_name": "conflicts over social media",
+          "shap_value": 0.11938082341613646,
+          "direction": "raising"
+        },
+        {
+          "feature": "Country_Other",
+          "pretty_name": "being from a less-common country in this dataset",
+          "shap_value": 0.10702783231428338,
+          "direction": "raising"
+        }
+      ],
+      "explanation_sentence": "This prediction was most shaped by usage-conflict interaction (lowering the score), conflicts over social media (raising the score), and being from a less-common country in this dataset (raising the score)."
+    },
+    {
+      "test_row_index": 175,
+      "actual_score": 5.0,
+      "predicted_score": 5.05,
+      "confidence_interval_68pct": [
+        4.738,
+        5.362
+      ],
+      "top_factors": [
+        {
+          "feature": "usage_conflict_interaction",
+          "pretty_name": "usage-conflict interaction",
+          "shap_value": -0.45353242181364906,
+          "direction": "lowering"
+        },
+        {
+          "feature": "Sleep_Hours_Per_Night",
+          "pretty_name": "sleep hours per night",
+          "shap_value": -0.19859251128991112,
+          "direction": "lowering"
+        },
+        {
+          "feature": "Country_Other",
+          "pretty_name": "being from a less-common country in this dataset",
+          "shap_value": -0.17606496339603406,
+          "direction": "lowering"
+        }
+      ],
+      "explanation_sentence": "This prediction was most shaped by usage-conflict interaction (lowering the score), sleep hours per night (lowering the score), and being from a less-common country in this dataset (lowering the score)."
+    }
+  ]
+}
