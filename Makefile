@@ -1,4 +1,4 @@
-.PHONY: data test eda baseline advanced tune evaluate error-analysis explain phase5
+.PHONY: data test eda baseline advanced tune evaluate error-analysis explain phase5 register-model mlflow-ui
 
 # Section 7: "a `make data` script pulls/copies the raw file into
 # data/raw/, deterministically, with no manual steps" (beyond the one
@@ -62,3 +62,18 @@ explain:
 
 # Runs all three Phase 5 steps in order.
 phase5: evaluate error-analysis explain
+
+# Phase 6: logs the Phase 5 final model (+ all its plots/CSVs/JSON) as
+# one MLflow run, registers it in the Model Registry, sets a "Staging"
+# alias, and moves the "Production" alias to it if it clears the
+# blueprint's promotion criteria (Section 17). Requires `make phase5`
+# to have been run at least once so the artifacts it re-logs exist.
+# Writes mlflow.db (gitignored — regenerate locally, don't commit it)
+# and reports/phase6_registry_decision.json.
+register-model:
+	python3 -m src.experiments.register_final_model
+
+# Launches the MLflow UI against this project's local tracking store
+# so you can browse run history and the registered model's aliases.
+mlflow-ui:
+	mlflow ui --backend-store-uri sqlite:///mlflow.db

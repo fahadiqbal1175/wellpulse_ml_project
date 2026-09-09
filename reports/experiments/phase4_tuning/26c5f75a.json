@@ -1,0 +1,25 @@
+{
+  "run_id": "26c5f75a",
+  "experiment": "phase4_tuning",
+  "model_name": "Random Forest",
+  "started_at": "2026-09-08T18:36:00.302395+00:00",
+  "ended_at": "2026-09-08T18:36:00.302410+00:00",
+  "params": {
+    "bootstrap": false,
+    "max_depth": 24,
+    "max_features": 0.7,
+    "min_samples_leaf": 1,
+    "min_samples_split": 2,
+    "n_estimators": 502
+  },
+  "metrics": {
+    "MAE": 0.1704314816206871,
+    "RMSE": 0.311938848814761,
+    "R2": 0.9181456555429338,
+    "best_cv_MAE": 0.14772294043779538
+  },
+  "tags": {
+    "phase": "phase4_tuning",
+    "stage": "best_of_search"
+  }
+}

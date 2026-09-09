@@ -1,0 +1,14 @@
+{
+  "registered_model_name": "wellpulse_final_model",
+  "new_version": 1,
+  "run_id": "ae96793096a94f759b349159ddad681b",
+  "new_test_mae": 0.23564233631511694,
+  "mean_baseline_test_mae": 0.9341153507596923,
+  "meaningful_margin_pct": 20.0,
+  "staging_alias_set": true,
+  "current_production_version": null,
+  "promotion_threshold_mae": 0.7472922806077539,
+  "criterion": "beat_mean_baseline_by_margin",
+  "promoted_to_production": true,
+  "reason": "Promotion criterion met \u2014 Production alias moved to new version."
+}

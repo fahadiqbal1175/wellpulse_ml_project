@@ -5,6 +5,23 @@ Mimics the MLflow API surface (log_run ~ start_run + log_params +
 log_metrics) so that swapping this for a real MLflow-backed logger in
 Phase 6 requires touching only this file, not any calling code in
 `src/models/tuning.py`.
+
+Phase 6 update: `log_run()` now DUAL-WRITES — the original CSV/JSON
+output is unchanged (tests/test_tuning.py still asserts on
+`logger.csv_path` row counts), and each call additionally opens one
+MLflow run tagged with dataset_version/feature_version/phase/stage so
+every one of tuning.py's ~120 CV trials + 2 best-of-search rows shows
+up in `mlflow ui`, satisfying Milestone ML-4 ("all runs visible and
+comparable"). Each MLflow run is flat (not nested) and tagged with
+this logger's `experiment` name plus the run's own tags, so the full
+set is filterable in the UI (e.g. `tags.experiment = "phase4_tuning"
+AND tags.stage = "best_of_search"`) without needing a long-lived
+parent run left open across the whole script's lifetime.
+
+The MLflow write is best-effort: a failure there (e.g. a locked
+sqlite file under concurrent access) is logged to stdout and swallowed
+rather than raised, so it can never break the CSV/JSON path that
+tuning.py's own tests depend on.
 """
 from __future__ import annotations
 
@@ -15,7 +32,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import mlflow
 import pandas as pd
+
+from src.experiments.mlflow_utils import init_mlflow, standard_tags
 
 
 @dataclass
@@ -84,7 +104,31 @@ class ExperimentLogger:
         )
         self._append_csv_row(run.to_flat_dict())
         self._write_json(run)
+        self._log_to_mlflow(run)
         return run
+
+    def _log_to_mlflow(self, run: ExperimentRun) -> None:
+        try:
+            init_mlflow()
+            mlflow_tags = standard_tags(
+                phase=str(run.tags.get("phase", self.experiment)),
+                stage=str(run.tags.get("stage", "unknown")),
+                experiment=self.experiment,
+                model_type=run.model_name,
+                source_run_id=run.run_id,
+            )
+            with mlflow.start_run(run_name=f"{self.experiment}_{run.model_name}_{run.run_id}"):
+                mlflow.set_tags(mlflow_tags)
+                mlflow.log_params({str(k): str(v) for k, v in run.params.items()})
+                numeric_metrics = {}
+                for k, v in run.metrics.items():
+                    try:
+                        numeric_metrics[str(k)] = float(v)
+                    except (TypeError, ValueError):
+                        continue
+                mlflow.log_metrics(numeric_metrics)
+        except Exception as exc:  # pragma: no cover - defensive, see module docstring
+            print(f"[ExperimentLogger] MLflow dual-write skipped for run {run.run_id}: {exc}")
 
     def _append_csv_row(self, row: dict[str, Any]) -> None:
         row_df = pd.DataFrame([row])

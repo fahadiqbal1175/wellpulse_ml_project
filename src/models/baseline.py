@@ -92,12 +92,21 @@ def run_baseline_leaderboard(
     train_df: pd.DataFrame,
     val_df: pd.DataFrame,
     model_factories: dict | None = None,
-) -> pd.DataFrame:
+    return_models: bool = False,
+):
     """
     `model_factories` defaults to Phase 3's MODEL_FACTORIES so existing
     callers (and tests) are unaffected. Phase 4 (src/models/advanced.py)
     passes an extended dict so LightGBM/XGBoost are trained and scored
     through this exact same loop rather than a duplicated one.
+
+    `return_models` (Phase 6 addition, default False so every existing
+    call site and test is unaffected): when True, returns
+    `(leaderboard, fitted_models)` instead of just `leaderboard`, where
+    `fitted_models` is `{name: fitted_estimator}` — added so the Phase
+    6 MLflow logging step in baseline.py/advanced.py's `main()` can log
+    each already-trained model without re-fitting all 7-9 of them a
+    second time.
     """
     if model_factories is None:
         model_factories = MODEL_FACTORIES
@@ -106,14 +115,19 @@ def run_baseline_leaderboard(
     X_val, y_val, _ = build_model_ready_xy(val_df, encoder=encoder, fit=False)
 
     rows = []
+    fitted_models = {}
     for name, factory in model_factories.items():
         model = factory()
         model.fit(X_train, y_train)
         preds = model.predict(X_val)
         metrics = evaluate(y_val, preds)
         rows.append({"model": name, **metrics})
+        if return_models:
+            fitted_models[name] = model
 
     leaderboard = pd.DataFrame(rows).sort_values("MAE").reset_index(drop=True)
+    if return_models:
+        return leaderboard, fitted_models
     return leaderboard
 
 
@@ -158,6 +172,37 @@ def run_country_generalization_check(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+def _log_leaderboard_to_mlflow(
+    leaderboard: pd.DataFrame,
+    fitted_models: dict,
+    X_train: pd.DataFrame,
+    phase: str,
+) -> None:
+    """Phase 6: logs every already-trained model in `fitted_models` as
+    its own lightweight MLflow run (params + val metrics + model
+    artifact), so `mlflow ui` shows full lineage across every phase —
+    not just Phase 4's tuning trials (Milestone ML-4)."""
+    from src.experiments.mlflow_utils import log_model_run, standard_tags
+
+    for _, row in leaderboard.iterrows():
+        name = row["model"]
+        model = fitted_models[name]
+        params = model.get_params() if hasattr(model, "get_params") else {}
+        metrics = {"MAE": row["MAE"], "RMSE": row["RMSE"], "R2": row["R2"]}
+        tags = standard_tags(phase=phase, stage="leaderboard", model_type=name)
+        try:
+            log_model_run(
+                run_name=f"{phase}_{name}",
+                model=model,
+                params=params,
+                metrics=metrics,
+                tags=tags,
+                input_example=X_train.head(2),
+            )
+        except Exception as exc:  # pragma: no cover - one bad model must never block the rest
+            print(f"[MLflow logging] skipped {name}: {exc}")
+
+
 def main() -> None:
     df = validate_raw_dataset(pd.read_csv(RAW_CSV))
     split = stratified_split(df)
@@ -166,13 +211,22 @@ def main() -> None:
     print("(test fold is held out untouched — not used in this leaderboard)")
     print()
 
-    leaderboard = run_baseline_leaderboard(split.train, split.val)
+    leaderboard, fitted_models = run_baseline_leaderboard(
+        split.train, split.val, return_models=True
+    )
     print("=== Phase 3 Baseline Leaderboard (val set) ===")
     print(leaderboard.to_string(index=False))
 
     LEADERBOARD_CSV.parent.mkdir(parents=True, exist_ok=True)
     leaderboard.to_csv(LEADERBOARD_CSV, index=False)
     print(f"\nSaved to {LEADERBOARD_CSV}")
+
+    try:
+        X_train, _, _ = build_model_ready_xy(split.train, encoder=None, fit=True)
+        _log_leaderboard_to_mlflow(leaderboard, fitted_models, X_train, phase="phase3_baseline")
+        print(f"Logged {len(fitted_models)} model runs to MLflow (experiment: wellpulse_mental_health_score)")
+    except Exception as exc:  # pragma: no cover - MLflow logging is best-effort
+        print(f"[main] MLflow logging skipped: {exc}")
 
     print()
     country_check = run_country_generalization_check(df)
