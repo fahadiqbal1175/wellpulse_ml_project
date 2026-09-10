@@ -26,6 +26,10 @@ shap>=0.44
 # Phase 6 (MLflow & Model Registry)
 mlflow>=3.16
 
-# Later phases will add: fastapi, uvicorn, sqlalchemy, etc. —
-# added when each phase needs them, not pinned speculatively ahead
-# of time.
+# Phase 7 (Inference API)
+fastapi>=0.115
+uvicorn[standard]>=0.30
+httpx2>=0.27  # test-only: fastapi.testclient.TestClient needs it
+
+# Later phases will add: sqlalchemy, etc. — added when each phase
+# needs them, not pinned speculatively ahead of time.

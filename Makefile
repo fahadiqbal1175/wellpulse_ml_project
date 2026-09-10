@@ -1,4 +1,4 @@
-.PHONY: data test eda baseline advanced tune evaluate error-analysis explain phase5 register-model mlflow-ui
+.PHONY: data test eda baseline advanced tune evaluate error-analysis explain phase5 register-model mlflow-ui serve-api
 
 # Section 7: "a `make data` script pulls/copies the raw file into
 # data/raw/, deterministically, with no manual steps" (beyond the one
@@ -77,3 +77,10 @@ register-model:
 # so you can browse run history and the registered model's aliases.
 mlflow-ui:
 	mlflow ui --backend-store-uri sqlite:///mlflow.db
+
+# Phase 7: serves the Production model (loaded once at startup via the
+# registry alias) behind FastAPI. GET /health, POST /api/v1/predict.
+# Requires `make register-model` to have been run at least once so a
+# "Production" alias exists. --reload is for local dev only.
+serve-api:
+	uvicorn src.api.main:app --reload --port 8000

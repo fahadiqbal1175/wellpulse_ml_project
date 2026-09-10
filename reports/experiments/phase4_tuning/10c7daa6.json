@@ -1,0 +1,22 @@
+{
+  "run_id": "10c7daa6",
+  "experiment": "phase4_tuning",
+  "model_name": "Decision Tree",
+  "started_at": "2026-09-10T09:53:21.661012+00:00",
+  "ended_at": "2026-09-10T09:53:21.661039+00:00",
+  "params": {
+    "ccp_alpha": 0.006234221521788219,
+    "max_depth": 7,
+    "max_features": 0.9,
+    "min_samples_leaf": 10,
+    "min_samples_split": 5
+  },
+  "metrics": {
+    "cv_MAE": 0.2896673362651465,
+    "cv_MAE_std": 0.04576252190162976
+  },
+  "tags": {
+    "phase": "phase4_tuning",
+    "stage": "cv_trial"
+  }
+}
