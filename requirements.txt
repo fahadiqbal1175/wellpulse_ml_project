@@ -29,7 +29,14 @@ mlflow>=3.16
 # Phase 7 (Inference API)
 fastapi>=0.115
 uvicorn[standard]>=0.30
-httpx2>=0.27  # test-only: fastapi.testclient.TestClient needs it
+httpx>=0.27  # test-only: fastapi.testclient.TestClient needs it
 
-# Later phases will add: sqlalchemy, etc. — added when each phase
-# needs them, not pinned speculatively ahead of time.
+# Phase 8 (Database/Application Layer)
+sqlalchemy>=2.0  # SQLite now (Section 34's "simpler alternative"),
+# migrating to the blueprint's stated-Essential Postgres at Phase 10 —
+# only a DATABASE_URL env var change, since src/api/db.py and
+# src/api/db_models.py use no SQLite-specific types.
+
+# Later phases will add: alembic (real migrations), psycopg2/asyncpg
+# (Postgres driver, Phase 10), etc. — added when each phase needs
+# them, not pinned speculatively ahead of time.

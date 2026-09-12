@@ -12,3 +12,11 @@ mlflow.db
 mlflow.db-journal
 mlflow.db-wal
 mlflow.db-shm
+
+# Phase 8 (Database/Application Layer): local SQLite app DB — each
+# environment grows its own via init_db() at startup, never shipped
+# inside a zip/commit (same reasoning as mlflow.db above).
+wellpulse_app.db
+wellpulse_app.db-journal
+wellpulse_app.db-wal
+wellpulse_app.db-shm

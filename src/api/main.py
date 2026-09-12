@@ -1,19 +1,24 @@
 """
-Phase 7 — Inference API (Section 18/19), Milestone ML-6.
+Phase 7/8 — Inference API + Database/Application Layer (Section
+18/19/20), Milestones ML-6 and Phase 8's "a submitted check-in
+round-trips through the DB".
 
 Endpoints:
     GET  /health              liveness/readiness (Section 19's `health` router)
-    POST /api/v1/predict      score + confidence interval + SHAP factors + recommendations
+    POST /api/v1/predict      score + confidence interval + SHAP factors +
+                              recommendations — free, unauthenticated, not persisted
+    POST /auth/register       Phase 8: email in, per-user API key out (shown once)
+    POST /checkins            Phase 8: authenticated, persisted version of /predict
+    GET  /checkins            Phase 8: the caller's own check-in history
+    GET  /checkins/{id}       Phase 8: one past check-in, full detail
 
-Deliberately NOT included (per this phase's scoping decisions):
-    - /checkins — Section 20 (DB persistence) is Phase 8; building a
-      /checkins endpoint with nothing to persist to was decided against
-      for this phase.
+Deliberately NOT included:
     - An admin-triggered model-reload endpoint — Section 18 mentions
       this as one option for picking up a registry-alias change, but
       it's optional ("checked periodically OR via an admin-triggered
-      reload endpoint") and outside Phase 7's roadmap wording. Restart
-      the process to pick up a new Production alias for now.
+      reload endpoint") and outside any phase's roadmap wording so
+      far. Restart the process to pick up a new Production alias.
+    - Alembic/migration framework — see src/api/db.py's docstring.
 
 Run locally:
     uvicorn src.api.main:app --reload --port 8000
@@ -25,6 +30,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 
+from src.api import auth, checkins
+from src.api.db import init_db
 from src.api.inference import ModelService, ModelUnavailableError
 from src.api.schemas import HealthResponse, PredictRequest, PredictResponse
 
@@ -42,15 +49,25 @@ async def lifespan(app: FastAPI):
     service = ModelService()
     service.load()
     app.state.model_service = service
+
+    # Phase 8: creates users/check_ins/predictions/prediction_explanations
+    # if they don't exist yet. A missing/misconfigured DB fails startup
+    # loudly here (unlike the model, there's no sensible "degraded"
+    # mode for an app with no database at all).
+    init_db()
+
     yield
 
 
 app = FastAPI(
     title="WellPulse Inference API",
     description="Predicts a student wellbeing score from behavioral/demographic survey data.",
-    version="0.7.0",
+    version="0.8.0",
     lifespan=lifespan,
 )
+
+app.include_router(auth.router)
+app.include_router(checkins.router)
 
 
 @app.get("/health", response_model=HealthResponse)

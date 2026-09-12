@@ -28,6 +28,7 @@ ever touched."
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -104,3 +105,60 @@ class HealthResponse(BaseModel):
     model_name: str | None = None
     model_version: str | None = None
     detail: str | None = None
+
+
+# --- Phase 8 (Section 19/20): auth + check-in persistence ---
+#
+# POST /checkins reuses `PredictRequest` directly as its request body
+# (see src/api/checkins.py) — the raw fields being submitted are
+# identical, so a second near-duplicate schema would be exactly the
+# kind of hand-rolled translation layer Section 18 already warned
+# against for the encoder (see this file's module docstring).
+
+
+class RegisterRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=255)
+
+
+class RegisterResponse(BaseModel):
+    email: str
+    api_key: str
+    note: str = (
+        "Store this key — it is shown only once and is required as the "
+        "X-API-Key header on every /checkins request."
+    )
+
+
+class CheckInSummary(BaseModel):
+    """GET /checkins (list): one row per past check-in, without the
+    full SHAP factor/explanation detail (that's what GET
+    /checkins/{id} is for)."""
+
+    id: int
+    created_at: datetime
+    predicted_score: float
+    risk_tier: Literal["low_risk", "medium_risk", "high_risk"]
+
+
+class CheckInDetail(BaseModel):
+    """Returned by both POST /checkins (right after submission) and
+    GET /checkins/{id} (retrieved later) — same shape either way, so
+    a client can't tell whether it's looking at a fresh prediction or
+    a persisted one, per Section 20's "show the same explanation
+    again later without recomputing SHAP"."""
+
+    id: int
+    created_at: datetime
+    predicted_score: float
+    risk_tier: Literal["low_risk", "medium_risk", "high_risk"]
+    confidence_interval_68pct: list[float]
+    top_factors: list[FactorOut]
+    explanation_sentence: str
+    recommendations: list[str]
+    model_name: str
+    model_version: str
+    disclaimer: str = (
+        "This is a wellbeing indicator from a portfolio ML model, not a "
+        "clinical diagnosis. If you're struggling, please talk to a "
+        "counselor or another trusted person."
+    )
