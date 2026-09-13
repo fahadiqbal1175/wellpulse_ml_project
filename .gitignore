@@ -20,3 +20,5 @@ wellpulse_app.db
 wellpulse_app.db-journal
 wellpulse_app.db-wal
 wellpulse_app.db-shm
+
+reports/experiments/phase4_tuning/

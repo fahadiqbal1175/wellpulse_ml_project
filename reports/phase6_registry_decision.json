@@ -1,7 +1,7 @@
 {
   "registered_model_name": "wellpulse_final_model",
   "new_version": 1,
-  "run_id": "bf3338168bf44489bafb35f45735c8ef",
+  "run_id": "130b2703e5a44b1eb86794b2779db788",
   "new_test_mae": 0.23564233631511694,
   "mean_baseline_test_mae": 0.9341153507596923,
   "meaningful_margin_pct": 20.0,
