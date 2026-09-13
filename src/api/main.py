@@ -11,6 +11,16 @@ Endpoints:
     POST /checkins            Phase 8: authenticated, persisted version of /predict
     GET  /checkins            Phase 8: the caller's own check-in history
     GET  /checkins/{id}       Phase 8: one past check-in, full detail
+    GET  /, /style.css, /app.js, ...
+                              Phase 9: the frontend (Section 21) — a static
+                              HTML/JS/CSS bundle in `static/`, mounted at "/"
+                              AFTER every API route below so explicit paths
+                              (e.g. /health) always win; StaticFiles only
+                              ever serves what those routes don't claim.
+                              Plain HTML/JS, not React — Section 34/35 frame
+                              the frontend as MVP-minimal (~5% of project
+                              effort), and serving it from this same FastAPI
+                              process avoids CORS/build tooling entirely.
 
 Deliberately NOT included:
     - An admin-triggered model-reload endpoint — Section 18 mentions
@@ -27,8 +37,10 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 
 from src.api import auth, checkins
 from src.api.db import init_db
@@ -105,3 +117,14 @@ def predict(request: PredictRequest) -> PredictResponse:
             status_code=500, detail=f"Prediction failed: {exc}"
         ) from exc
     return PredictResponse(**result)
+
+
+# Phase 9 (Section 21): mounted LAST and at "/" so every API route
+# above still wins on an exact match — Starlette tries routes in
+# registration order, and this Mount only ever catches what nothing
+# above it claimed (e.g. GET /, GET /style.css, GET /app.js).
+# check_dir=True (the default) means this raises loudly at import
+# time if static/ is ever missing, rather than silently 404ing every
+# frontend request.
+STATIC_DIR = Path(__file__).resolve().parents[2] / "static"
+app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="frontend")

@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WellPulse — Check In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="site-header">
+    <h1>WellPulse</h1>
+    <p class="tagline">A check-in on the things that shape student wellbeing — usage, sleep, and connection.</p>
+  </header>
+
+  <!-- ===================== AUTH ===================== -->
+  <section id="auth-section" class="panel" hidden>
+    <div class="tabs" role="tablist">
+      <button class="tab-btn is-active" id="tab-register" role="tab" aria-selected="true">First time here</button>
+      <button class="tab-btn" id="tab-login" role="tab" aria-selected="false">I have a key</button>
+    </div>
+
+    <form id="register-form" class="stack">
+      <label for="register-email">Email</label>
+      <input id="register-email" name="email" type="email" required minlength="3" maxlength="255"
+             placeholder="you@example.com" autocomplete="email" />
+      <p class="hint">No password — we'll generate a private key for you instead. It's shown once, so you'll want to save it.</p>
+      <button type="submit" class="btn-primary">Create my key</button>
+      <p class="form-error" id="register-error" role="alert"></p>
+    </form>
+
+    <form id="login-form" class="stack" hidden>
+      <label for="login-key">Your API key</label>
+      <input id="login-key" name="api_key" type="text" required minlength="10"
+             placeholder="Paste the key you saved earlier" autocomplete="off" />
+      <button type="submit" class="btn-primary">Continue</button>
+      <p class="form-error" id="login-error" role="alert"></p>
+    </form>
+  </section>
+
+  <!-- ============== SAVE-YOUR-KEY BANNER ============== -->
+  <section id="save-key-banner" class="panel key-banner" hidden>
+    <h2>Save your key now</h2>
+    <p>This is the only time it's shown. Without it, there's no way back into your check-in history — copy it somewhere safe.</p>
+    <div class="key-row">
+      <code id="save-key-value"></code>
+      <button id="copy-key-btn" class="btn-secondary" type="button">Copy</button>
+    </div>
+    <p class="copy-confirm" id="copy-confirm" aria-live="polite"></p>
+    <button id="key-saved-btn" class="btn-primary" type="button">I've saved it — continue</button>
+  </section>
+
+  <!-- ===================== APP ===================== -->
+  <div id="app-section" hidden>
+
+    <div class="topbar">
+      <span class="signed-in-as">Signed in</span>
+      <button id="logout-btn" class="btn-link" type="button">Log out</button>
+    </div>
+
+    <section class="panel">
+      <h2>New check-in</h2>
+      <form id="checkin-form" class="grid-form">
+
+        <div class="field">
+          <label for="f-age">Age</label>
+          <input id="f-age" type="number" min="10" max="100" step="1" required />
+        </div>
+
+        <div class="field">
+          <label for="f-gender">Gender</label>
+          <select id="f-gender" required>
+            <option value="" disabled selected>Select…</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="f-academic-level">Academic level</label>
+          <select id="f-academic-level" required>
+            <option value="" disabled selected>Select…</option>
+            <option>High School</option>
+            <option>Undergraduate</option>
+            <option>Graduate</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="f-country">Country</label>
+          <input id="f-country" type="text" minlength="2" maxlength="60" required placeholder="e.g. Pakistan" />
+        </div>
+
+        <div class="field">
+          <label for="f-usage-hours">Avg. daily usage (hours)</label>
+          <input id="f-usage-hours" type="number" min="0" max="24" step="0.1" required />
+        </div>
+
+        <div class="field">
+          <label for="f-platform">Most-used platform</label>
+          <select id="f-platform" required>
+            <option value="" disabled selected>Select…</option>
+            <option>Instagram</option>
+            <option>Twitter</option>
+            <option>TikTok</option>
+            <option>YouTube</option>
+            <option>Facebook</option>
+            <option>LinkedIn</option>
+            <option>Snapchat</option>
+            <option>LINE</option>
+            <option>KakaoTalk</option>
+            <option>VKontakte</option>
+            <option>WhatsApp</option>
+            <option>WeChat</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="f-sleep-hours">Sleep per night (hours)</label>
+          <input id="f-sleep-hours" type="number" min="0.1" max="24" step="0.1" required />
+        </div>
+
+        <div class="field">
+          <label for="f-relationship">Relationship status</label>
+          <select id="f-relationship" required>
+            <option value="" disabled selected>Select…</option>
+            <option>Single</option>
+            <option>In Relationship</option>
+            <option>Complicated</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="f-conflicts">Conflicts over social media <span class="sub">(past month, roughly)</span></label>
+          <input id="f-conflicts" type="number" min="0" max="20" step="1" required />
+        </div>
+
+        <div class="field field-wide">
+          <button type="submit" class="btn-primary" id="checkin-submit-btn">Get my check-in</button>
+          <p class="form-error" id="checkin-error" role="alert"></p>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- ===================== RESULT ===================== -->
+    <section class="panel" id="result-section" hidden>
+      <h2 id="result-heading">Your result</h2>
+
+      <div class="result-headline">
+        <div class="score-block">
+          <span class="score-value" id="result-score">—</span>
+          <span class="score-scale">/ 10</span>
+        </div>
+        <span class="tier-badge" id="result-tier">—</span>
+      </div>
+
+      <p class="ci-line" id="result-ci"></p>
+      <p class="explanation" id="result-explanation"></p>
+
+      <h3>What shaped this</h3>
+      <ul class="factor-list" id="result-factors"></ul>
+
+      <h3>Worth trying</h3>
+      <ul class="reco-list" id="result-recommendations"></ul>
+
+      <p class="disclaimer" id="result-disclaimer"></p>
+    </section>
+
+    <!-- ===================== HISTORY ===================== -->
+    <section class="panel" id="history-section" hidden>
+      <h2>Your history</h2>
+      <p class="trend-summary" id="trend-summary"></p>
+
+      <div class="chart-wrap" id="chart-wrap"></div>
+
+      <ul class="history-list" id="history-list"></ul>
+    </section>
+
+    <section class="panel" id="history-empty" hidden>
+      <h2>Your history</h2>
+      <p>No check-ins yet — submit the form above and this fills in.</p>
+    </section>
+
+  </div>
+
+  <footer class="site-footer">
+    <p>WellPulse is a portfolio ML project. Scores come from a trained model on survey data, not a clinical assessment.</p>
+  </footer>
+
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
