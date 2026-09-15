@@ -1,4 +1,4 @@
-.PHONY: data test eda baseline advanced tune evaluate error-analysis explain phase5 register-model mlflow-ui serve-api
+.PHONY: data test eda baseline advanced tune evaluate error-analysis explain phase5 register-model mlflow-ui serve-api docker-build docker-up docker-down docker-logs
 
 # Section 7: "a `make data` script pulls/copies the raw file into
 # data/raw/, deterministically, with no manual steps" (beyond the one
@@ -84,3 +84,26 @@ mlflow-ui:
 # "Production" alias exists. --reload is for local dev only.
 serve-api:
 	uvicorn src.api.main:app --reload --port 8000
+
+# Phase 10 (Section 22): builds the two-stage image (see Dockerfile) —
+# the trainer stage registers the already-committed final model into a
+# fresh MLflow store rooted inside the image; the runtime stage is what
+# actually ships. Linux/Mac/WSL convenience only — Windows/PowerShell
+# users should run the plain `docker build`/`docker compose` commands
+# in docs/PHASE10_DOCKERIZATION.md directly (no `make` there).
+docker-build:
+	docker compose build
+
+# Builds if needed, starts db (waits for its healthcheck) then api,
+# and serves the full stack at http://localhost:8000 — Milestone ML-7.
+docker-up:
+	docker compose up --build
+
+# Stops both containers. The named `wellpulse_db_data` volume (and
+# therefore check-in/prediction history) survives this — use
+# `docker compose down -v` to also wipe it.
+docker-down:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f

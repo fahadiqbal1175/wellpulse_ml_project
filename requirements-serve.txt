@@ -1,0 +1,58 @@
+# Phase 10 (Dockerization, Section 22): the dependency set actually
+# needed by (a) the API's request-serving path and (b) registering an
+# already-trained model into a fresh MLflow tracking store/registry.
+# Deliberately excludes requirements.txt's training/EDA-only packages
+# (lightgbm, xgboost, seaborn, nbformat, nbclient, ipykernel) — nothing
+# on either of those two paths imports them. Verified for real: a
+# fresh venv installed from ONLY this file (a) imported src.api.main
+# cleanly, (b) served a live /health + /api/v1/predict request with a
+# real SHAP explanation, and (c) ran `python -m
+# src.experiments.register_final_model` end to end.
+#
+# EXACT versions, not >= ranges — this is a change from this file's
+# first draft, made after a real `docker build` hit a resolver
+# deadlock: `pandera` and `fastapi` don't uniquely agree on a
+# `pydantic` version, so pip's backtracking resolver tried 30+
+# `pydantic` releases (2.13.5 down to 2.4.1) looking for a combination
+# that satisfies both — brutally slow on any connection, and on a slow
+# one, one of those 30+ download attempts came back with a hash
+# mismatch (a corrupted/truncated download, not an actual security
+# issue). Pinning exact versions here removes the search entirely —
+# pip installs the one version specified, no candidates to compare.
+# These exact versions are the ones verified end to end above; if you
+# ever need to bump one, re-run that same verification (fresh venv +
+# import + a live /health and /api/v1/predict request) before trusting
+# a new pin.
+#
+# Used by BOTH Dockerfile stages (trainer and runtime) — see
+# Dockerfile's comment on why the trainer stage doesn't need
+# requirements.txt's heavier training packages either. If you bump a
+# shared pin in requirements.txt (e.g. scikit-learn), bump it here too
+# so both files resolve to the same version and the
+# `InconsistentVersionWarning` some environments emit on unpickling
+# doesn't turn into an actual behavioral mismatch.
+
+# Data validation + feature/model pipeline (needed because
+# compute_residual_std_on_val() re-validates data/raw/*.csv and
+# rebuilds the train/val split on every process startup — see
+# src/evaluation/explainability.py)
+pandas==3.0.5
+pandera==0.33.1
+scikit-learn==1.9.1
+joblib==1.6.0
+
+# Explainability (SHAP + the headless matplotlib backend
+# src/evaluation/explainability.py and error_analysis.py import at
+# module level, even though the serving path never calls their
+# plotting functions — the import itself still requires it installed)
+shap==0.52.0
+matplotlib==3.11.2
+
+# Experiment tracking / model registry
+mlflow==3.16.0
+
+# API + persistence
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+sqlalchemy==2.0.52
+psycopg2-binary==2.9.13

@@ -1,0 +1,39 @@
+# Phase 10: trims what `docker build` sends as build context. The
+# Dockerfile's COPY commands already select specific folders, so most
+# of this is about build speed, not correctness — but .git and the
+# gitignored local DB/tracking-store files genuinely should never end
+# up inside an image layer.
+.git/
+.gitignore
+
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Local tracking store / app DB — see .gitignore's own comments on
+# these. The trainer stage regenerates mlflow.db/mlruns/ fresh INSIDE
+# the image at the right path (see Dockerfile) rather than reusing
+# whatever's sitting on the host, so shipping the host's copies into
+# the build context would be actively wrong here, not just wasted
+# space.
+mlflow.db
+mlflow.db-journal
+mlflow.db-wal
+mlflow.db-shm
+mlruns/
+wellpulse_app.db
+wellpulse_app.db-journal
+wellpulse_app.db-wal
+wellpulse_app.db-shm
+
+# Not needed by anything the Dockerfile COPYs (see its own comments) —
+# excluding them keeps the context small even though they wouldn't be
+# copied into an image layer either way.
+notebooks/
+scripts/
+tests/
+docs/
+reports/
+.venv/
+venv/

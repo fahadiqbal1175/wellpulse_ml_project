@@ -1,0 +1,73 @@
+# WellPulse v2 — Phase 10 (Section 22): local dev stack.
+#
+# Two services: api (this repo's Dockerfile) + db (Postgres, replacing
+# the SQLite used through Phase 9). No separate mlflow service —
+# mlflow.db/mlruns/ are baked into the api image by its own trainer
+# stage (see Dockerfile), so the api container already has a fully
+# working Production-aliased registry without a live MLflow server
+# alongside it. To browse run history/registry state interactively,
+# `make mlflow-ui` still works locally (outside Docker) exactly as it
+# did in Phase 6 — this compose file doesn't duplicate that.
+#
+# No top-level `version:` key — the Compose v2 CLI (`docker compose`,
+# no hyphen) that ships with current Docker Desktop/Engine no longer
+# needs it and warns if present.
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: wellpulse
+      POSTGRES_PASSWORD: wellpulse
+      POSTGRES_DB: wellpulse
+    volumes:
+      # Named volume so check-in/prediction history survives
+      # `docker-compose down` (only `down -v` wipes it) — the whole
+      # point of migrating off SQLite's single ephemeral file.
+      - wellpulse_db_data:/var/lib/postgresql/data
+    ports:
+      # Host-side access for `psql`/a GUI client during local dev.
+      # Not required for api<->db traffic, which stays on the
+      # compose-internal network via the `db` hostname below.
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wellpulse -d wellpulse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    environment:
+      # src/api/db.py reads DATABASE_URL first and only falls back to
+      # a local SQLite file if it's unset (Phase 8's design, built
+      # specifically so this Phase 10 migration would be a config
+      # change) — `db` here is the other service's compose-internal
+      # hostname, not localhost.
+      DATABASE_URL: postgresql://wellpulse:wellpulse@db:5432/wellpulse
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # Section 25: "container health (Docker healthcheck hitting
+      # /health)". Plain python + urllib rather than curl/wget — the
+      # runtime image is python:3.12-slim and doesn't have either
+      # installed, and adding one would work against Section 22's
+      # "keeping the production image small" goal for a healthcheck
+      # that doesn't need it.
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request as u; import sys; sys.exit(0 if u.urlopen('http://localhost:8000/health').status == 200 else 1)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  wellpulse_db_data:

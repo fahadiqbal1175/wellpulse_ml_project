@@ -1,18 +1,24 @@
 """
 Phase 8 — Database/Application Layer (Section 20), engine/session setup.
 
-DB choice (resolved decision): SQLite now — Section 34 lists it as
-the "simpler alternative" to Postgres, adequate for local-dev/portfolio
-scale — migrating to the blueprint's stated-Essential Postgres at
-Phase 10, when Section 22's docker-compose `db: postgres` service is
-introduced anyway.
+DB choice (resolved decision): SQLite through Phase 9 — Section 34
+lists it as the "simpler alternative" to Postgres, adequate for
+local-dev/portfolio scale. Migrated to Postgres at Phase 10
+(Section 22's docker-compose `db: postgres` service): confirmed as
+purely the config change this file was built for — `DATABASE_URL`
+pointed at a real local Postgres, `init_db()` created all 4 tables
+unchanged, and a live server driven against it round-tripped
+register/check-in/history/per-user-isolation with zero changes to
+this file or `db_models.py`. Local/non-Docker runs still default to
+SQLite (below) when `DATABASE_URL` is unset; the Docker image (see
+`../../docker-compose.yml`) always sets it to Postgres.
 
-To make that migration a connection-string change rather than a
-schema rewrite, `DATABASE_URL` is read from the environment first,
-falling back to a local SQLite file only if it's unset. The ORM
-models in `db_models.py` stick to portable SQLAlchemy column types
-(Integer, String, Float, DateTime, JSON, ForeignKey) for the same
-reason — nothing SQLite-specific.
+`DATABASE_URL` is read from the environment first, falling back to a
+local SQLite file only if it's unset — this is what made the Postgres
+migration a connection-string change rather than a schema rewrite.
+The ORM models in `db_models.py` stick to portable SQLAlchemy column
+types (Integer, String, Float, DateTime, JSON, ForeignKey) for the
+same reason — nothing SQLite-specific.
 
 No Alembic/migration framework yet — outside Section 20/34's stated
 MVP scope; `init_db()` just creates tables that don't exist yet. A

@@ -37,6 +37,22 @@ sqlalchemy>=2.0  # SQLite now (Section 34's "simpler alternative"),
 # only a DATABASE_URL env var change, since src/api/db.py and
 # src/api/db_models.py use no SQLite-specific types.
 
-# Later phases will add: alembic (real migrations), psycopg2/asyncpg
-# (Postgres driver, Phase 10), etc. — added when each phase needs
-# them, not pinned speculatively ahead of time.
+# Phase 10 (Dockerization) — Postgres driver, confirmed as exactly the
+# config-only migration Phase 8 set up for: `init_db()` against a real
+# local Postgres created all 4 tables unchanged, and a live server run
+# against it round-tripped register/check-in/history/per-user-isolation
+# with zero src/api/db.py or db_models.py changes. Listed here (not
+# just in requirements-serve.txt) so `pip install -r requirements.txt`
+# alone is enough to point a local, non-Docker `uvicorn` run at
+# Postgres too, not only the Docker image.
+psycopg2-binary>=2.9
+
+# requirements-serve.txt (Phase 10) is a DELIBERATELY SEPARATE,
+# smaller file — the subset of this file (plus nothing else) that the
+# Docker image's two stages actually need. It excludes lightgbm,
+# xgboost, seaborn, nbformat/nbclient/ipykernel below, none of which
+# the serving path or model-registration path ever imports. Bump
+# shared pins (e.g. scikit-learn) in BOTH files together.
+
+# Later phases will add: alembic (real migrations), etc. — added when
+# each phase needs it, not pinned speculatively ahead of time.
