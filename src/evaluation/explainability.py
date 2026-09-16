@@ -48,7 +48,9 @@ FIGURES_DIR = PROJECT_ROOT / "reports" / "figures"
 SAMPLE_EXPLANATIONS_JSON = PROJECT_ROOT / "reports" / "phase5_sample_explanations.json"
 
 TOP_N_FACTORS = 3
-CONFIDENCE_Z = 1.0  # ~68% interval under a normal residual assumption — simple and honest, not oversold as a calibrated interval
+# ~68% interval under a normal residual assumption — simple and
+# honest, not oversold as a calibrated interval.
+CONFIDENCE_Z = 1.0
 
 
 def _prettify_feature_name(name: str) -> str:
@@ -92,7 +94,7 @@ def compute_residual_std_on_val() -> float:
     once in `final_evaluation.py`, not spent again here."""
     from src.data.schema import validate_raw_dataset
     from src.data.split import stratified_split
-    from src.models.baseline import RAW_CSV, evaluate
+    from src.models.baseline import RAW_CSV
 
     bundle = build_final_eval_bundle()
     df = validate_raw_dataset(pd.read_csv(RAW_CSV))

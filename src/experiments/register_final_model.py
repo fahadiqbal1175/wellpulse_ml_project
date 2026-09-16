@@ -34,7 +34,6 @@ from src.data.split import stratified_split
 from src.evaluation import error_analysis, explainability
 from src.evaluation.final_evaluation import (
     FINAL_EVAL_CSV,
-    FINAL_MODEL_PATH,
     RISK_TIER_REPORT_CSV,
     build_final_eval_bundle,
     risk_tier_classification_report,

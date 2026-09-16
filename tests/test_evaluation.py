@@ -6,7 +6,6 @@ criterion: 'SHAP summary plot + 3 sample explanations reviewed by
 hand')."""
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 from src.evaluation import error_analysis, explainability, final_evaluation

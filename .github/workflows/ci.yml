@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-test-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Run tests (unit + data validation — Section 29)
+        run: pytest tests/ -v
+
+      - name: Build image and start the stack
+        run: docker compose up -d --build --wait --wait-timeout 120
+
+      - name: Smoke test — health check
+        run: curl -sf http://localhost:8000/health
+
+      - name: Smoke test — one real prediction
+        run: |
+          curl -sf -X POST http://localhost:8000/api/v1/predict \
+            -H "Content-Type: application/json" \
+            -d '{
+              "Age": 20,
+              "Gender": "Female",
+              "Academic_Level": "Undergraduate",
+              "Country": "Pakistan",
+              "Avg_Daily_Usage_Hours": 5.2,
+              "Most_Used_Platform": "Instagram",
+              "Sleep_Hours_Per_Night": 6.0,
+              "Relationship_Status": "Single",
+              "Conflicts_Over_Social_Media": 3
+            }' | grep -q predicted_score
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
