@@ -26,6 +26,13 @@ jobs:
       - name: Lint (ruff)
         run: ruff check .
 
+      - name: Register the final model (populates a fresh local MLflow registry)
+        # Does NOT retrain — registers the already-committed models/final_model.joblib
+        # into a throwaway mlflow.db/mlruns on the runner. tests/test_api.py and
+        # tests/test_checkins.py intentionally load the real registered Production
+        # model (see their own docstrings), so this has to exist before pytest runs.
+        run: python -m src.experiments.register_final_model
+
       - name: Run tests (unit + data validation — Section 29)
         run: pytest tests/ -v
 
