@@ -105,18 +105,21 @@ def main() -> None:
     bundle = build_final_eval_bundle()
     print(f"Final model (from Phase 5): {bundle.final_model_name}")
 
-    print("\nRegenerating Phase 5 artifacts (error analysis + SHAP explainability)...")
+    final_preds = bundle.final_model.predict(bundle.X_test)
+    test_metrics = evaluate(bundle.y_test, final_preds)
+    tier_report = risk_tier_classification_report(bundle.y_test, final_preds)
+    tier_metrics = flatten_risk_tier_metrics(tier_report)
+
+    print("\nRegenerating Phase 5 artifacts (final evaluation + error analysis + SHAP explainability)...")
+    FINAL_EVAL_CSV.parent.mkdir(parents=True, exist_ok=True)
+    bundle.leaderboard.to_csv(FINAL_EVAL_CSV, index=False)
+    tier_report.to_csv(RISK_TIER_REPORT_CSV, index=False)
     error_analysis.main()
     explainability.main()
 
     for path in PHASE5_ARTIFACT_PATHS:
         if not path.exists():
             raise SystemExit(f"Expected Phase 5 artifact missing: {path}")
-
-    final_preds = bundle.final_model.predict(bundle.X_test)
-    test_metrics = evaluate(bundle.y_test, final_preds)
-    tier_report = risk_tier_classification_report(bundle.y_test, final_preds)
-    tier_metrics = flatten_risk_tier_metrics(tier_report)
 
     mean_baseline_test_mae = compute_mean_baseline_test_mae(bundle)
     print(f"\nFresh DummyRegressor(mean) test MAE (same train/test fold): {mean_baseline_test_mae:.4f}")
@@ -129,45 +132,35 @@ def main() -> None:
         **tier_metrics,
     }
 
-    params = (
-        bundle.final_model.get_params()
-        if hasattr(bundle.final_model, "get_params")
-        else {}
-    )
     tags = standard_tags(
-        phase="phase6_registry",
-        stage="final_model",
-        model_type=bundle.final_model_name,
+        phase="6",
+        stage="final_registration",
+        model_name=bundle.final_model_name,
     )
 
+    print("\nLogging MLflow run for final model...")
     run_id = log_model_run(
-        run_name=f"phase6_final_{bundle.final_model_name}",
+        run_name="final_model_registration",
         model=bundle.final_model,
-        params=params,
+        params=bundle.final_model.get_params(),
         metrics=metrics,
         tags=tags,
-        extra_artifacts=[str(FINAL_MODEL_PATH), *[str(p) for p in PHASE5_ARTIFACT_PATHS]],
-        input_example=bundle.X_test.head(2),
+        extra_artifacts=PHASE5_ARTIFACT_PATHS,
     )
-    print(f"\nLogged final-model MLflow run: {run_id}")
 
     decision = register_and_maybe_promote(
         run_id=run_id,
         model_name=REGISTERED_MODEL_NAME,
-        test_mae=test_metrics["MAE"],
+        test_mae=metrics["test_MAE"],
         mean_baseline_test_mae=mean_baseline_test_mae,
         meaningful_margin_pct=MEANINGFUL_MARGIN_PCT,
     )
 
-    print("\n=== Phase 6 Registry Decision ===")
-    for key, value in decision.items():
-        print(f"  {key}: {value}")
-
     DECISION_RECORD_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(DECISION_RECORD_PATH, "w") as f:
-        json.dump(decision, f, indent=2, default=str)
-    print(f"\nSaved decision record -> {DECISION_RECORD_PATH}")
-
-
+    DECISION_RECORD_PATH.write_text(json.dumps(decision, indent=2))
+    status = "promoted to Production" if decision["promoted_to_production"] else "Staging only"
+    print(f"\nRegistered as {REGISTERED_MODEL_NAME} v{decision['new_version']} ({status})")
+    print(f"Saved decision record -> {DECISION_RECORD_PATH}")
+    
 if __name__ == "__main__":
     main()
