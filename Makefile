@@ -107,3 +107,21 @@ docker-down:
 
 docker-logs:
 	docker compose logs -f
+
+
+# Phase 13 (Sections 25/26): builds the training-time reference
+# distribution the drift job compares live traffic against. Run once
+# now, and again any time the model is retrained (Phase 14).
+build-reference:
+	python3 -m src.monitoring.build_reference
+
+# Runs the same drift check the scheduled GitHub Actions job runs
+# (see .github/workflows/drift_check.yml), against whatever
+# DATABASE_URL is currently set (defaults to local SQLite).
+drift-check:
+	python3 -m src.monitoring.run_drift_check
+
+# Seeds N (default 50) deliberately-shifted synthetic check-ins —
+# Milestone ML-9's verify tool. Override with `make seed-drift-test N=100`.
+seed-drift-test:
+	python3 -m src.monitoring.seed_synthetic_checkins --n $(if $(N),$(N),50)

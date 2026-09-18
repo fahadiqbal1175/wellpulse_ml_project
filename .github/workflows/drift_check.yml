@@ -1,0 +1,51 @@
+name: Drift Check
+
+on:
+  schedule:
+    # Weekly rather than daily — expected real check-in volume on a
+    # free-tier portfolio deploy is low (Section 26's "scheduled job").
+    - cron: "0 6 * * 1"  # every Monday, 06:00 UTC
+  workflow_dispatch: {}   # manual trigger — e.g. right after seeding synthetic data
+
+permissions:
+  contents: write  # needed to commit the updated drift report back
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Deliberately NOT requirements-serve.txt — the drift check
+      # never loads the model (predicted_score is already stored by
+      # /checkins at submission time), so its only real dependencies
+      # are DB access + pandas.
+      - run: pip install pandas sqlalchemy psycopg2-binary
+
+      - name: Run drift check
+        id: drift
+        continue-on-error: true
+        env:
+          # Render's Postgres INTERNAL URL only resolves inside
+          # Render's own private network — Actions runners need the
+          # EXTERNAL Database URL instead (Render dashboard -> your
+          # Postgres -> Connections -> External Database URL).
+          DATABASE_URL: ${{ secrets.RENDER_DB_EXTERNAL_URL }}
+        run: python -m src.monitoring.run_drift_check
+
+      - name: Commit updated drift report
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports/monitoring/
+          git diff --cached --quiet || git commit -m "chore: update drift report [skip ci]"
+          git push
+
+      - name: Fail the run if drift was flagged
+        if: steps.drift.outcome == 'failure'
+        run: exit 1
