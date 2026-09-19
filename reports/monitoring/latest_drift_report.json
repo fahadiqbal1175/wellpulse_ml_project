@@ -1,0 +1,6 @@
+{
+  "run_at": "2026-09-19T09:17:37.159825+00:00",
+  "window_size_used": 4,
+  "verdict": "insufficient_data",
+  "message": "Only 4 check-in(s) available (minimum 30) \u2014 skipping drift computation rather than reporting a verdict from too small a sample."
+}
