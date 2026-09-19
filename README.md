@@ -5,16 +5,14 @@ WellPulse predicts a continuous student wellbeing/mental-health score
 usage, sleep, platform, academic level, relationship status, and
 social-media conflict — and serves it through a fully tracked,
 registered, tested, containerized, deployed, and monitored ML
-pipeline. It's a portfolio project built to demonstrate end-to-end ML
+pipeline. It's a project built to demonstrate end-to-end ML
 engineering, not a clinical or diagnostic tool.
 
-**Live app:** https://wellpulse.onrender.com *(free-tier host — spins
-down after 15 min idle, so the first request can take 30–60s to wake
-up)*
+**Live app:** https://wellpulse.onrender.com
 **API docs:** https://wellpulse.onrender.com/docs
 
 Built phase-by-phase against a private technical specification
-(`wellpulse-ml-blueprint-v2.md`, kept outside this repo) — the
+(`wellpulse-ml-blueprint-v2.md`, kept outside this repo) the
 sections it references throughout `docs/` refer to that spec.
 
 ![CI](https://github.com/fahadiqbal1175/wellpulse_ml_project/actions/workflows/ci.yml/badge.svg)
@@ -41,11 +39,6 @@ sections it references throughout `docs/` refer to that spec.
 | 12 | Deployment | Live on Render (web service + managed Postgres). |
 | 13 | Monitoring & drift | Weekly PSI-based drift check over live check-in traffic via GitHub Actions. |
 
-Phase 14 (scheduled retraining/rollback) was deliberately **not**
-built: the app never collects a true ground-truth label on production
-check-ins, so there's no honest "new data" to retrain on yet. The
-mechanics it would reuse (registry promotion logic, alias-based
-rollback) already exist from Phase 6.
 
 Full write-ups for each phase decisions made, numbers, limitations
 live in [`docs/`](docs/).
@@ -124,17 +117,17 @@ documented honestly rather than re-run until they "worked"
 [`docs/PHASE5_EVALUATION.md`](docs/PHASE5_EVALUATION.md)).
 
 **Known limitations, stated plainly:**
-- High-risk recall is 0.5 — half of true high-risk students in the
+- High-risk recall is 0.5, half of true high-risk students in the
   test set are predicted into `medium_risk` instead. Precision on
   `high_risk` is 1.0 (no false alarms), but this is the single most
   important caveat if this project is ever read as more than a
   portfolio piece.
 - Countries with very few rows (e.g. New Zealand, 8 rows total) are
   bucketed into "Other" by the categorical encoder and the model
-  cannot distinguish them from other rare-country respondents —
+  cannot distinguish them from other rare-country respondents
   measured directly as a ~5x higher error on New Zealand's test rows.
 - A Random Forest's error roughly doubles on countries never seen
-  during training (0.16 → 0.39 MAE) — a real, measured generalization
+  during training (0.16 → 0.39 MAE) a real, measured generalization
   gap, not a hypothetical one.
 - Confidence intervals are a residual-spread proxy (± 1 std, measured
   on validation), not a statistically calibrated prediction interval.
@@ -165,8 +158,8 @@ make register-model
 make serve-api
 ```
 
-`make register-model` must run at least once — locally or via Docker
-— before the API has a `Production` model to load.
+`make register-model` must run at least once locally or via Docker
+before the API has a `Production` model to load.
 
 ## Running the full stack with Docker
 
@@ -179,7 +172,7 @@ make docker-logs
 The image is a two-stage build: a **trainer** stage registers the
 already-trained, already-committed model into a fresh MLflow store
 rooted at the image's own filesystem (fixing a real portability bug
-where MLflow bakes in an absolute artifact path — see
+where MLflow bakes in an absolute artifact path, see
 [`docs/PHASE10_DOCKERIZATION.md`](docs/PHASE10_DOCKERIZATION.md)), and
 a **runtime** stage that actually serves traffic, using only
 `requirements-serve.txt` (no LightGBM/XGBoost/notebook tooling in the
@@ -209,7 +202,7 @@ real `/api/v1/predict` call against the running container → tear down.
 Hosted on **Render** (free tier): one Docker web service (built
 straight from the repo's existing `Dockerfile`, no changes needed) +
 one managed Postgres instance, connected over Render's private
-network. Verified against the live URL, not just locally — see
+network. Verified against the live URL, not just locally, see
 [`docs/PHASE12_DEPLOYMENT.md`](docs/PHASE12_DEPLOYMENT.md) for the
 free-tier limitations (cold starts, 30-day Postgres expiry, no
 staging environment).
@@ -226,7 +219,7 @@ fails (red ✗) when the verdict is `"significant"`. Verified for real:
 a deliberately shifted synthetic batch was seeded against the live
 production database and confirmed to trip the check. Full design
 rationale — why PSI alone, why a 200-check-in rolling window instead
-of a day-based one, why 5 bins instead of 10 — in
+of a day-based one, why 5 bins instead of 10, in
 [`docs/PHASE13_MONITORING_DRIFT.md`](docs/PHASE13_MONITORING_DRIFT.md).
 
 This only measures feature/prediction drift, never accuracy: no
