@@ -265,13 +265,3 @@ tests/           71 tests across every phase above
 .github/workflows/  ci.yml (build/test/smoke-test), drift_check.yml (weekly monitoring)
 ```
 
-## What's deliberately not built
-
-- **Retraining automation (blueprint Phase 14):** no real feedback
-  loop exists yet to retrain on — see "Project status" above.
-- Password hashing, JWT, sessions, RBAC — a single per-user API key is
-  the whole auth model, by design for an MVP scope.
-- Alembic/migration tooling — `init_db()` only creates tables that
-  don't exist yet.
-- A staging environment or manual-approval deploy gate — out of scope
-  for a single free-tier instance.
