@@ -28,6 +28,14 @@
 
 * { box-sizing: border-box; }
 
+/* Any element with a `display` rule attached to its class (e.g. .stack
+   below) would otherwise win over the browser's default [hidden]
+   { display: none } rule, because author CSS always outranks the
+   user-agent stylesheet regardless of specificity. This makes `hidden`
+   authoritative again, so app.js's el.form.hidden = true/false toggles
+   actually hide things. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background:
