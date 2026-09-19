@@ -112,7 +112,7 @@
     }
     if (data && typeof data.detail === "string") return data.detail;
     if (status === 401) return "That API key isn't valid.";
-    if (status === 503) return "The prediction model is temporarily unavailable — try again shortly.";
+    if (status === 503) return "The prediction model is temporarily unavailable, try again shortly.";
     return `Something went wrong (${status}).`;
   }
 
@@ -147,7 +147,7 @@
     } catch (err) {
       el.registerError.textContent =
         err.status === 409
-          ? "That email is already registered — switch to \u201cI have a key\u201d if you saved it earlier."
+          ? "That email is already registered, switch to \u201cI have a key\u201d if you saved it earlier."
           : err.message;
     }
   });
@@ -182,7 +182,7 @@
       await navigator.clipboard.writeText(el.saveKeyValue.textContent);
       el.copyConfirm.textContent = "Copied.";
     } catch {
-      el.copyConfirm.textContent = "Copy failed — select the text and copy it manually.";
+      el.copyConfirm.textContent = "Copy failed, select the text and copy it manually.";
     }
   });
 
@@ -233,7 +233,7 @@
       await loadHistory();
     } catch (err) {
       if (err.status === 401) {
-        el.checkinError.textContent = "Your session key was rejected — please log in again.";
+        el.checkinError.textContent = "Your session key was rejected, please log in again.";
         setTimeout(() => el.logoutBtn.click(), 1500);
       } else {
         el.checkinError.textContent = err.message;
