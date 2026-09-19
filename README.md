@@ -1,7 +1,7 @@
-# WellPulse — ML-Engineered Student Wellbeing Check-In
+# WellPulse: ML-Engineered Student Wellbeing Check-In
 
 WellPulse predicts a continuous student wellbeing/mental-health score
-(1–10) from behavioral and demographic survey data — social-media
+(1–10) from behavioral and demographic survey data: social-media
 usage, sleep, platform, academic level, relationship status, and
 social-media conflict — and serves it through a fully tracked,
 registered, tested, containerized, deployed, and monitored ML
@@ -47,7 +47,7 @@ check-ins, so there's no honest "new data" to retrain on yet. The
 mechanics it would reuse (registry promotion logic, alias-based
 rollback) already exist from Phase 6.
 
-Full write-ups for each phase — decisions made, numbers, limitations —
+Full write-ups for each phase decisions made, numbers, limitations
 live in [`docs/`](docs/).
 
 ---
