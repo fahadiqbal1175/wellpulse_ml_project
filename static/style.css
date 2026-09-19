@@ -16,7 +16,12 @@
   --high: #ac5148;
   --high-tint: #f4e3e0;
 
-  --radius: 3px;
+  --radius: 8px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(30, 42, 34, 0.05);
+  --shadow: 0 10px 24px -12px rgba(30, 42, 34, 0.22);
+  --transition: 150ms ease;
+
   --font-display: "Fraunces", Georgia, serif;
   --font-body: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -25,7 +30,8 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(720px 360px at 50% -80px, #eaf1eb 0%, var(--bg) 60%);
   color: var(--text);
   font-family: var(--font-body);
   font-size: 16px;
@@ -34,74 +40,94 @@ body {
 }
 
 .wrap {
-  max-width: 620px;
+  max-width: 640px;
   margin: 0 auto;
-  padding: 48px 24px 80px;
+  padding: 52px 20px 80px;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ---------- header / footer ---------- */
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--accent-tint);
+  color: var(--accent-dark);
+  flex-shrink: 0;
+}
+
 .site-header h1 {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 2.4rem;
+  font-size: 2.1rem;
   letter-spacing: -0.01em;
-  margin: 0 0 6px;
+  margin: 0;
   color: var(--accent-dark);
 }
 
 .site-header .tagline {
-  margin: 0 0 40px;
+  margin: 10px 0 36px;
   color: var(--text-muted);
   max-width: 46ch;
+  font-size: 0.98rem;
 }
 
 .site-footer {
-  margin-top: 56px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
+  margin-top: 40px;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  text-align: center;
 }
 
-/* ---------- panels ---------- */
+/* ---------- panels (cards) ---------- */
 
 .panel {
-  padding: 28px 0;
-  border-top: 1px solid var(--border);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 26px 26px 28px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-sm);
+  animation: fadeInUp 0.35s ease both;
 }
-
-.panel:first-of-type { border-top: none; padding-top: 0; }
 
 .panel h2 {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   margin: 0 0 18px;
 }
 
 .panel h3 {
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   color: var(--text-muted);
-  margin: 24px 0 10px;
+  margin: 22px 0 10px;
 }
 
 /* ---------- forms ---------- */
 
-.stack { display: flex; flex-direction: column; gap: 8px; max-width: 420px; }
+.stack { display: flex; flex-direction: column; gap: 8px; }
 
 label {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--text);
-}
-
-.field label .sub {
-  font-weight: 400;
-  color: var(--text-muted);
-  font-size: 0.82rem;
 }
 
 input, select {
@@ -113,11 +139,32 @@ input, select {
   background: var(--surface);
   color: var(--text);
   width: 100%;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-input:focus, select:focus, button:focus-visible {
+input::placeholder { color: #9aa79f; }
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+
+button:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: 2px;
+}
+
+.input-suffix { position: relative; }
+.input-suffix input { padding-right: 42px; }
+.input-suffix span {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  pointer-events: none;
 }
 
 .hint {
@@ -148,13 +195,16 @@ button {
 .btn-primary {
   background: var(--accent);
   color: #fff;
-  padding: 11px 20px;
+  padding: 12px 22px;
   border-radius: var(--radius);
   font-size: 0.95rem;
   font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
 }
-.btn-primary:hover { background: var(--accent-dark); }
-.btn-primary:disabled { background: var(--border-strong); cursor: not-allowed; }
+.btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { background: var(--border-strong); box-shadow: none; transform: none; cursor: not-allowed; }
 
 .btn-secondary {
   background: transparent;
@@ -163,17 +213,18 @@ button {
   border-radius: var(--radius);
   font-size: 0.9rem;
   color: var(--text);
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
 }
-.btn-secondary:hover { border-color: var(--accent); color: var(--accent-dark); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-tint); }
 
 .btn-link {
   background: none;
   color: var(--text-muted);
-  font-size: 0.9rem;
-  text-decoration: underline;
-  padding: 0;
+  font-size: 0.88rem;
+  padding: 4px 0;
+  transition: color var(--transition);
 }
-.btn-link:hover { color: var(--text); }
+.btn-link:hover { color: var(--accent-dark); }
 
 .form-error {
   color: var(--high);
@@ -182,48 +233,49 @@ button {
   min-height: 1.2em;
 }
 
-/* ---------- auth tabs ---------- */
+/* ---------- auth tabs (segmented control) ---------- */
 
 .tabs {
   display: flex;
   gap: 4px;
+  background: var(--bg);
+  padding: 4px;
+  border-radius: 12px;
   margin-bottom: 22px;
-  border-bottom: 1px solid var(--border);
 }
 
 .tab-btn {
+  flex: 1;
   background: none;
-  padding: 8px 4px 12px;
-  margin-right: 20px;
+  padding: 9px 4px;
+  border-radius: 9px;
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
-  border-bottom: 2px solid transparent;
-  position: relative;
-  top: 1px;
+  transition: background var(--transition), color var(--transition), box-shadow var(--transition);
 }
 
 .tab-btn.is-active {
+  background: var(--surface);
   color: var(--accent-dark);
-  border-bottom: 2px solid var(--accent);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ---------- key banner ---------- */
 
 .key-banner {
   background: var(--accent-tint);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 22px 24px;
+  border-color: var(--accent);
 }
 
-.key-banner h2 { margin-top: 0; }
+.key-banner h2 { margin: 0 0 4px; }
+.key-banner > p { margin: 0 0 16px; color: var(--text-muted); }
 
 .key-row {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin: 14px 0 6px;
+  margin: 0 0 6px;
 }
 
 .key-row code {
@@ -248,11 +300,7 @@ button {
 .topbar {
   display: flex;
   justify-content: flex-end;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 8px;
-  color: var(--text-muted);
-  font-size: 0.85rem;
+  margin-bottom: 4px;
 }
 
 /* ---------- result ---------- */
@@ -273,7 +321,7 @@ button {
 .score-scale { font-size: 1.1rem; color: var(--text-muted); }
 
 .tier-badge {
-  padding: 5px 12px;
+  padding: 5px 13px;
   border-radius: 999px;
   font-size: 0.82rem;
   font-weight: 600;
@@ -319,9 +367,10 @@ button {
 
 .disclaimer {
   margin-top: 22px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
   max-width: 56ch;
+  font-style: italic;
 }
 
 /* ---------- history ---------- */
@@ -331,14 +380,18 @@ button {
   max-width: 56ch;
 }
 
-.chart-wrap { margin: 18px 0 22px; }
+.chart-wrap {
+  margin: 16px 0 20px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 14px;
+}
 .chart-wrap svg { width: 100%; height: auto; display: block; }
 
 .history-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--border);
 }
 
 .history-list li {
@@ -346,18 +399,23 @@ button {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 11px 10px;
+  border-radius: var(--radius);
   font-size: 0.92rem;
+  transition: background var(--transition);
 }
+
+.history-list li:hover { background: var(--accent-tint); }
 
 .history-list button {
   background: none;
   color: var(--accent-dark);
   font-size: 0.85rem;
-  text-decoration: underline;
+  font-weight: 600;
   padding: 0;
 }
+.history-list button:hover { text-decoration: underline; }
+.history-list button::after { content: " \2192"; }
 
 .history-date { color: var(--text-muted); }
 .history-score { font-weight: 600; }

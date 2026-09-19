@@ -1,200 +1,277 @@
-# WellPulse v2 — ML-First
+# WellPulse — ML-Engineered Student Wellbeing Check-In
 
-Predicts a continuous, self-reported student wellbeing/mental-health
-score from behavioral/demographic survey data (social-media usage,
-sleep, platform, academic/relationship context), served through a
-tracked, registered, monitored ML pipeline. See
-`wellpulse-ml-blueprint-v2.md` for the full specification.
+WellPulse predicts a continuous student wellbeing/mental-health score
+(1–10) from behavioral and demographic survey data — social-media
+usage, sleep, platform, academic level, relationship status, and
+social-media conflict — and serves it through a fully tracked,
+registered, tested, containerized, deployed, and monitored ML
+pipeline. It's a portfolio project built to demonstrate end-to-end ML
+engineering, not a clinical or diagnostic tool.
 
-## Status
+**Live app:** https://wellpulse.onrender.com *(free-tier host — spins
+down after 15 min idle, so the first request can take 30–60s to wake
+up)*
+**API docs:** https://wellpulse.onrender.com/docs
 
-**Phase 0 — Problem & Dataset Validation:** done (confirmed below).
-**Phase 1 — Data Pipeline:** done.
-**Phase 2 — EDA & Feature Engineering:** done.
-**Phase 3 — Baseline Models:** done.
-**Phase 4 — Advanced Modeling & Tuning:** done.
+Built phase-by-phase against a private technical specification
+(`wellpulse-ml-blueprint-v2.md`, kept outside this repo) — the
+sections it references throughout `docs/` refer to that spec.
 
-## Phase 0/1 notes
+![CI](https://github.com/fahadiqbal1175/wellpulse_ml_project/actions/workflows/ci.yml/badge.svg)
+![Drift check](https://github.com/fahadiqbal1175/wellpulse_ml_project/actions/workflows/drift_check.yml/badge.svg)
 
-Primary dataset: **Students' Social Media Addiction** (Kaggle,
-[`adilshamim8/social-media-addiction-vs-relationships`](https://www.kaggle.com/datasets/adilshamim8/social-media-addiction-vs-relationships)).
-Confirmed locally: **705 rows, 13 columns, zero missing values, zero
-duplicate `Student_ID`s** — matches the blueprint's Section 4 claims.
-One thing the blueprint didn't call out: the 705 rows span **110
-distinct countries** (~6.4 rows/country on average) — worth keeping in
-mind for the Section 10 grouped-by-country generalization split in
-Phase 2/3, since most countries will have too few rows to split on
-individually.
+---
 
-Kaggle requires authentication to download directly, so `data/raw/students_social_media_addiction.csv`
-here was sourced from a GitHub mirror of the exact same dataset
-([`rizanpradiya/Analyzing-Social-Media-Addiction-Among-Students`](https://github.com/rizanpradiya/Analyzing-Social-Media-Addiction-Among-Students))
-with matching column names and row count. If you'd rather pull it
-straight from Kaggle yourself (e.g. via `kaggle datasets download`),
-just point the ingestion script at that file with `--source`.
+## Project status — all 14 phases complete
 
-## Setup
+| # | Phase | Summary |
+|---|---|---|
+| 0 | Problem & dataset validation | Dataset confirmed: 705 rows, 13 columns, 0 missing/duplicates, 110 countries. |
+| 1 | Data pipeline | Ingest + Pandera schema contract + content-hash versioning. |
+| 2 | EDA & feature engineering | Leakage check excluded `Addicted_Score`; engineered features + train-only categorical encoding. |
+| 3 | Baseline models | 7 model families compared; country-holdout generalization gap measured. |
+| 4 | Advanced modeling & tuning | 9 families (+LightGBM/XGBoost); tuning did **not** beat the untuned baseline — reported as-is. |
+| 5 | Final evaluation & explainability | Test-set evaluation, risk-tier report, error analysis, SHAP explainability. **Random Forest (tuned)** selected. |
+| 6 | MLflow & model registry | Run tracking, model registration, `Production` alias promotion. |
+| 7 | Inference API | FastAPI `POST /api/v1/predict` — real score, CI, SHAP factors, recommendation. |
+| 8 | Database & application layer | Per-user API-key auth, SQLite-backed `/auth/register` + `/checkins`. |
+| 9 | Frontend | Plain HTML/CSS/JS check-in UI, served as static files by FastAPI. |
+| 10 | Dockerization | Multi-stage image (trainer → runtime); SQLite → Postgres migration. |
+| 11 | CI/CD | GitHub Actions: lint, test, build, smoke-test on every push. |
+| 12 | Deployment | Live on Render (web service + managed Postgres). |
+| 13 | Monitoring & drift | Weekly PSI-based drift check over live check-in traffic via GitHub Actions. |
+
+Phase 14 (scheduled retraining/rollback) was deliberately **not**
+built: the app never collects a true ground-truth label on production
+check-ins, so there's no honest "new data" to retrain on yet. The
+mechanics it would reuse (registry promotion logic, alias-based
+rollback) already exist from Phase 6.
+
+Full write-ups for each phase — decisions made, numbers, limitations —
+live in [`docs/`](docs/).
+
+---
+
+## Architecture
+
+```
+Kaggle CSV
+   │  (Phase 1: ingest + Pandera schema contract)
+   ▼
+data/raw/  ──►  Feature engineering + encoding (Phase 2)
+                     │
+                     ▼
+        7→9 model families, tuned, evaluated on held-out test (Phase 3–5)
+                     │
+                     ▼
+        MLflow tracking + registry, Production alias (Phase 6)
+                     │
+                     ▼
+        FastAPI inference service (Phase 7)  ──►  SQLite/Postgres (Phase 8)
+                     │
+                     ▼
+        Static HTML/CSS/JS frontend, served by FastAPI (Phase 9)
+                     │
+                     ▼
+        Docker multi-stage image (Phase 10) ──► GitHub Actions CI (Phase 11)
+                     │
+                     ▼
+        Render web service + managed Postgres (Phase 12)
+                     │
+                     ▼
+        Weekly PSI drift check over live traffic (Phase 13)
+```
+
+## Tech stack
+
+- **Data/ML:** pandas, Pandera, scikit-learn, LightGBM, XGBoost, SHAP
+- **Experiment tracking:** MLflow (tracking + model registry)
+- **API:** FastAPI, Pydantic, SQLAlchemy 2.0
+- **DB:** SQLite (dev) / PostgreSQL (Docker & production)
+- **Frontend:** vanilla HTML/CSS/JS, no build step, no framework
+- **Infra:** Docker (multi-stage build), GitHub Actions, Render
+
+---
+
+## Dataset
+
+Primary source: **Students' Social Media Addiction** (Kaggle,
+[`adilshamim8/social-media-addiction-vs-relationships`](https://www.kaggle.com/datasets/adilshamim8/social-media-addiction-vs-relationships)),
+705 rows, 13 columns, spanning 110 countries. Kaggle requires
+authentication to fetch programmatically, so `data/raw/` here is
+sourced from a GitHub mirror with matching column names and row count
+(`rizanpradiya/Analyzing-Social-Media-Addiction-Among-Students`). Point
+`make data SOURCE=...` at your own download if you'd rather pull it
+from Kaggle directly.
+
+`Addicted_Score` and `Affects_Academic_Performance` are **excluded**
+from the model's feature set — both were found to explain most of the
+target's variance on their own (89.3% and 65.4% respectively), a
+near-tautological relationship rather than a genuine predictive
+signal. Full reasoning in [`docs/FEATURES.md`](docs/FEATURES.md).
+
+---
+
+## Model
+
+**Final model: Random Forest (tuned)** — selected over an untuned
+Decision Tree on the test fold (MAE 0.2356 vs 0.2358, but Random
+Forest wins clearly on RMSE and R²: 0.461/0.829 vs 0.505/0.796).
+Neither LightGBM nor XGBoost beat either candidate, and hyperparameter
+tuning did not beat the untuned baseline on validation — both
+documented honestly rather than re-run until they "worked"
+([`docs/PHASE4_TUNING.md`](docs/PHASE4_TUNING.md),
+[`docs/PHASE5_EVALUATION.md`](docs/PHASE5_EVALUATION.md)).
+
+**Known limitations, stated plainly:**
+- High-risk recall is 0.5 — half of true high-risk students in the
+  test set are predicted into `medium_risk` instead. Precision on
+  `high_risk` is 1.0 (no false alarms), but this is the single most
+  important caveat if this project is ever read as more than a
+  portfolio piece.
+- Countries with very few rows (e.g. New Zealand, 8 rows total) are
+  bucketed into "Other" by the categorical encoder and the model
+  cannot distinguish them from other rare-country respondents —
+  measured directly as a ~5x higher error on New Zealand's test rows.
+- A Random Forest's error roughly doubles on countries never seen
+  during training (0.16 → 0.39 MAE) — a real, measured generalization
+  gap, not a hypothetical one.
+- Confidence intervals are a residual-spread proxy (± 1 std, measured
+  on validation), not a statistically calibrated prediction interval.
+
+---
+
+## Getting started (local, no Docker)
 
 ```bash
 pip install -r requirements.txt
-```
 
-## Data pipeline (Phase 1)
+# Re-validate the dataset already at data/raw/, or ingest a fresh copy:
+make data                              # SOURCE=~/Downloads/students.csv to ingest fresh
 
-```bash
-# Re-validate/re-stamp the file already at data/raw/:
-make data
-
-# Or ingest a fresh download from wherever it landed:
-make data SOURCE=~/Downloads/students.csv
-
-# Run the test suite (includes the corrupted-copy verification):
-make test
-```
-
-`src/data/ingest.py` copies the raw CSV to a canonical path under
-`data/raw/`, validates it against the data contract in
-`src/data/schema.py`, and writes `data/raw/dataset_version.txt` — a
-content hash + ingestion month (e.g. `396c5612_2026-09`) that every
-later MLflow run will log, so any experiment can be traced back to the
-exact CSV that produced it (Section 7).
-
-`src/data/schema.py` is a Pandera `DataFrameModel` data contract:
-column types, plausible value ranges, and known categories, with
-`strict=True` so an added/renamed/dropped column fails loudly instead
-of silently changing what downstream code sees. It intentionally does
-**not** encode outlier judgment calls (e.g. an unusually high but
-possible usage-hours value) — that belongs to Phase 2's EDA, which
-flags rather than silently drops.
-
-`tests/test_data_validation.py` verifies both directions: the real
-dataset passes as-is, and several distinct deliberately-introduced
-corruptions (negative age, out-of-range score, unrecognized category,
-null in a required field, duplicate ID, extra column, missing column)
-are all caught in one lazy-validation pass.
-
-## EDA & feature engineering (Phase 2)
-
-```bash
-# One-time setup, only needed if you want to REBUILD the notebook:
-python3 -m ipykernel install --user --name python3 --display-name "Python 3"
-
-# Rebuild + re-execute the EDA notebook top to bottom:
+# Rebuild the EDA notebook (optional — already committed with fresh output):
 make eda
+
+# Train, tune, and evaluate:
+make baseline       # 7 model families
+make advanced       # +LightGBM/XGBoost (9 total)
+make tune           # randomized search on the top-2 by val MAE
+make phase5         # final test-set evaluation + error analysis + SHAP
+
+# Register the final model into a local MLflow registry (writes mlflow.db, gitignored):
+make register-model
+
+# Serve the API + frontend at http://localhost:8000
+make serve-api
 ```
 
-`notebooks/01_eda.ipynb` is generated (not hand-edited) from
-`scripts/build_eda_notebook.py`, then executed end-to-end so its
-outputs are always real and reproducible, not stale. It covers
-missingness, univariate/bivariate distributions, the correlation
-matrix, outlier scanning, risk-tier balance, and — most importantly —
-**the leakage check**.
+`make register-model` must run at least once — locally or via Docker
+— before the API has a `Production` model to load.
 
-**Key finding:** `Addicted_Score` was found to explain 89.3% of the
-target's variance *on its own* (a near-tautological relationship) and
-is **excluded** from the model's feature set as a result.
-`Affects_Academic_Performance` (already outside the blueprint's
-Section 5 input list) was independently confirmed as correctly
-excluded (65.4% variance alone). Full reasoning, numbers, and the
-finalized feature table are in `docs/FEATURES.md`.
-
-Also worth knowing: even without `Addicted_Score`, the remaining
-behavioral features explain ~82% of the target's variance with a
-plain linear fit — unusually clean for organic self-report survey
-data. This is documented as a dataset-quality caveat, not hidden (see
-`docs/FEATURES.md`).
-
-`src/features/engineering.py` — deterministic, per-row transforms
-(`usage_to_sleep_ratio`, `age_group`, `usage_conflict_interaction`),
-safe to apply to any split or a single live request.
-
-`src/features/encoding.py` — fit-on-train-only categorical encoding
-(`RareCategoryBucketer` + `CategoricalFeatureEncoder`). Not fit yet —
-that happens in Phase 3 once there's an actual train split — but built
-now so the feature list is finalized. Buckets `Country` (110 raw
-values for 705 rows) into the top 8 + "Other" before one-hot encoding,
-to avoid dozens of near-empty single-respondent columns.
-
-`tests/test_feature_engineering.py` — verifies the engineered features
-are computed correctly and that the encoder generalizes to categories
-unseen in "train" without leaking train-only information into "val".
-
-## Baseline models (Phase 3)
+## Running the full stack with Docker
 
 ```bash
-make baseline
+make docker-up      # builds if needed, waits for Postgres, serves at http://localhost:8000
+make docker-down    # stops both containers (check-in history survives; add -v to wipe it)
+make docker-logs
 ```
 
-Splits the data 70/15/15 (stratified on risk tier, `src/data/split.py`)
-and trains 7 model families — dummy mean/median, Linear/Ridge/Lasso,
-Decision Tree, Random Forest — comparing all of them on the **val**
-set only (test stays untouched until Phase 5's final evaluation).
-Writes `reports/phase3_leaderboard.csv` and
-`reports/phase3_country_generalization.csv`.
+The image is a two-stage build: a **trainer** stage registers the
+already-trained, already-committed model into a fresh MLflow store
+rooted at the image's own filesystem (fixing a real portability bug
+where MLflow bakes in an absolute artifact path — see
+[`docs/PHASE10_DOCKERIZATION.md`](docs/PHASE10_DOCKERIZATION.md)), and
+a **runtime** stage that actually serves traffic, using only
+`requirements-serve.txt` (no LightGBM/XGBoost/notebook tooling in the
+production image).
 
-**Current leader (by MAE, the blueprint's primary metric): Decision
-Tree** (MAE 0.151) — though Random Forest has better RMSE/R², a
-genuine tension documented in `docs/BASELINE_RESULTS.md` rather than
-picked around.
-
-**Country generalization check:** a Random Forest's error roughly
-**doubles** (MAE 0.16 → 0.39) on countries it never saw during
-training — a real, measured confirmation of the sampling-bias risk
-flagged back in Section 4. Full numbers and discussion in
-`docs/BASELINE_RESULTS.md`.
-
-`src/data/split.py` — the stratified train/val/test split, plus the
-separate country-holdout split used only for the generalization check.
-
-`src/models/baseline.py` — trains and evaluates all 7 model families,
-reusing the Phase 2 feature engineering/encoding modules with the
-encoder fit on train only.
-
-`tests/test_split.py`, `tests/test_baseline.py` — verify zero
-row/country overlap across splits, stratification is preserved, all
-dummy baselines are beaten by every real model, and at least 4 model
-families are compared (Milestone ML-3).
-
-## Advanced modeling & tuning (Phase 4)
+## Testing
 
 ```bash
-make advanced   # extend the leaderboard to 9 model families (adds LightGBM/XGBoost)
-make tune       # randomized search on the top-2 candidates by val MAE
+make test     # 71/71 passing
 ```
 
-`make advanced` re-runs Phase 3's exact training/evaluation loop
-(`src.models.baseline.run_baseline_leaderboard`, now given an optional
-`model_factories` argument) over 9 model families instead of 7,
-writing `reports/phase4_leaderboard.csv`. **Neither LightGBM nor
-XGBoost beat Decision Tree or Random Forest** — unsurprising with only
-493 training rows and a dataset already flagged in Phase 2 as unusually
-clean for self-report data.
+Covers data validation (including deliberately corrupted inputs),
+feature engineering, splits, baseline/tuning, evaluation, the MLflow
+registry, the inference API (including a real prediction against the
+real Production model), auth + check-in persistence, drift math, and
+static-frontend serving.
 
-`make tune` runs `RandomizedSearchCV` (60 iterations, 5-fold CV on
-train only) over the top-2 candidates by MAE — computed fresh from the
-leaderboard each run, not hardcoded, though it confirmed Decision
-Tree/Random Forest are still the pair. Every trial is logged via
-`src/experiments/logger.py` to `reports/experiments/phase4_tuning.csv`,
-in a format Phase 6's MLflow work is meant to read from / replace.
-Writes `reports/phase4_tuning_summary.csv` and
-`models/phase4_best_model.joblib`.
+## CI/CD
 
-**Result: tuning did not beat the untuned baseline** (best tuned MAE
-0.1704, Random Forest, vs. untuned Decision Tree's 0.1509) — reported
-as-is rather than re-run until it "worked," per this project's practice
-of documenting inconvenient results. Full discussion of why —
-including the case that the untuned tree's win looks partly like a
-favorable-split artifact rather than genuinely superior generalization
-— is in `docs/PHASE4_TUNING.md`.
+`.github/workflows/ci.yml` runs on every push/PR to `main`: lint
+(ruff) → register the model into a throwaway registry → full test
+suite → `docker compose up --build` → smoke-test `/health` and one
+real `/api/v1/predict` call against the running container → tear down.
 
-`src/models/advanced.py`, `src/models/param_spaces.py`,
-`src/models/tuning.py`, `src/experiments/logger.py` — implementation.
-`tests/test_advanced.py`, `tests/test_tuning.py` — verification.
+## Deployment
 
-## Next: Phase 5 — Final Evaluation
+Hosted on **Render** (free tier): one Docker web service (built
+straight from the repo's existing `Dockerfile`, no changes needed) +
+one managed Postgres instance, connected over Render's private
+network. Verified against the live URL, not just locally — see
+[`docs/PHASE12_DEPLOYMENT.md`](docs/PHASE12_DEPLOYMENT.md) for the
+free-tier limitations (cold starts, 30-day Postgres expiry, no
+staging environment).
 
-First and only look at the test fold. Given Phase 4's FAIL verdict,
-evaluate both the untuned Decision Tree (Phase 3's leaderboard winner)
-and the tuned Random Forest (Phase 4's best CV-validated model)
-against test, rather than assuming tuning produced the model to carry
-forward.
+## Monitoring & drift
+
+`.github/workflows/drift_check.yml` runs weekly (and on manual
+dispatch): pulls the last 200 check-ins from the production database,
+compares each feature's and the predicted score's distribution against
+a committed training-time reference using **Population Stability Index
+(PSI)**, and commits the report back to
+[`reports/monitoring/`](reports/monitoring/) either way. The workflow
+fails (red ✗) when the verdict is `"significant"`. Verified for real:
+a deliberately shifted synthetic batch was seeded against the live
+production database and confirmed to trip the check. Full design
+rationale — why PSI alone, why a 200-check-in rolling window instead
+of a day-based one, why 5 bins instead of 10 — in
+[`docs/PHASE13_MONITORING_DRIFT.md`](docs/PHASE13_MONITORING_DRIFT.md).
+
+This only measures feature/prediction drift, never accuracy: no
+ground-truth label is ever collected on a production check-in, so
+there's nothing to score the model's real-world correctness against.
+
+## API reference
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| `GET /health` | none | Liveness + whether the Production model is loaded |
+| `POST /api/v1/predict` | none | Free "try it" endpoint — score, CI, SHAP factors, recommendation. Not persisted. |
+| `POST /auth/register` | none | Register with an email, get a per-user API key (shown once) |
+| `POST /checkins` | API key | Submit a check-in — persisted, same response shape as `/predict` |
+| `GET /checkins` | API key | List your own check-in history, newest first |
+| `GET /checkins/{id}` | API key | Re-fetch one of your own past check-ins (404 if not yours) |
+
+Interactive docs at `/docs` (Swagger UI) once the API is running.
+
+## Repository layout
+
+```
+src/
+  data/          Ingestion, Pandera schema, train/val/test + country-holdout splits
+  features/      Deterministic feature engineering + train-only categorical encoding
+  models/        Baseline/advanced leaderboards, hyperparameter tuning
+  evaluation/    Final test-set evaluation, error analysis, SHAP explainability
+  experiments/   Experiment logging, MLflow registration
+  api/           FastAPI app, schemas, auth, check-ins, inference service, recommendations
+  monitoring/    Reference distribution, PSI drift math, scheduled drift-check job
+static/          Frontend (index.html, style.css, app.js)
+notebooks/       Generated + executed EDA notebook
+docs/            Per-phase write-ups: decisions, numbers, limitations
+reports/         Leaderboards, evaluation reports, figures, monitoring reports
+tests/           71 tests across every phase above
+.github/workflows/  ci.yml (build/test/smoke-test), drift_check.yml (weekly monitoring)
+```
+
+## What's deliberately not built
+
+- **Retraining automation (blueprint Phase 14):** no real feedback
+  loop exists yet to retrain on — see "Project status" above.
+- Password hashing, JWT, sessions, RBAC — a single per-user API key is
+  the whole auth model, by design for an MVP scope.
+- Alembic/migration tooling — `init_db()` only creates tables that
+  don't exist yet.
+- A staging environment or manual-approval deploy gate — out of scope
+  for a single free-tier instance.
